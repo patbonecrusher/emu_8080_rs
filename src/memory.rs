@@ -22,7 +22,7 @@ const RAMSTART: u16 = 0x2000;
 
 
 use std::ops::{Index, Range, RangeFrom};
-//use crate::pointer::Pointer;
+use crate::pointer::Pointer;
 
 pub struct Memory {
     pub memory: Vec<u8>,
@@ -90,7 +90,15 @@ impl Index<RangeFrom<usize>> for Memory {
     }
 }
 
+impl Index<Pointer> for Memory {
+    type Output = u8;
+    fn index(&self, index: Pointer) -> &Self::Output {
+        // For this to work, the Pointer struct must implement the
+        // Deref traits.  Done in num_impls.rs macro
 
+        &self[*index]
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -124,6 +132,19 @@ mod tests {
         let mut memory: Memory = Default::default();
         memory.load(&[0xaa, 0xbb, 0xcc], (MEMSIZE-3) as u16);
         assert_eq!(&memory[(MEMSIZE-3)..], [0xaa, 0xbb, 0xcc]);
+    }
+
+    #[test]
+    fn test_pointer() {
+        let mut memory: Memory = Default::default();
+
+        // For the + 1 to work, the Pointer struct must implement the
+        // Add traits.  Done in num_impls.rs macro
+        let sp: Pointer = Pointer::from(0x2001 as u16);
+        memory.write(sp + 1, 0xda);
+
+        let x: u8 = memory[sp + 1].into();
+        assert_eq!(x, 0xda);
     }
 
     #[test]
